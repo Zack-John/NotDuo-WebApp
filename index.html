@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -11,28 +12,39 @@
 
     <h1>NotDuo Sample Webpage</h1>
 
-    <div class="main-content">
-        <!-- FIXME:
-        output.html and GET method is placeholder to get form logic working.
-        will need to either change this to a POST request to the database, 
-        or use a different method built into firebase if one exists 
-        -->
-        <form action="./output.html" method="GET">
-            <div>
-                <label for="email">Email</label>
-                <input type="email" name="email" id="email" required>
-            </div>
+    <div id="enterDetails">
+        <!-- TODO: swap labels with regular headings since we're not using a form anymore -->
 
-            <div>
-                <label for="password">Password</label>
-                <input type="password" name="password" id="password" required>
-            </div>
+        <div id="nameField">
+            <label>Name</label>
+            <input id="name" type="text" required>
+        </div>
 
-            <div class="buttons">
-                <button type="reset">Reset</button>
-                <button type="submit">Submit</button>
-            </div>
-        </form>
+        <div id="emailField">
+            <label>Email</label>
+            <input id="enterEmail" type="email" required>
+        </div>
+
+        <div id="passwordField">
+            <label>Password</label>
+            <input id=enterPassword type="password" required>
+        </div>
+
+        <div class="buttons">
+            <button id="resetButton" type="reset">Reset</button>
+            <button id="submitButton" type="submit">Submit</button>
+        </div>
+    </div>
+
+
+    <!-- This stuff is just here to (eventually) test grabbing stuff from database -->
+    <div id="findDetails">
+        <h1>Find by ID</h1>
+        <h4>ID</h4>
+        <input id="findID" type="text">
+
+        <br><br>
+
     </div>
 
     <script src="app.js" type="module"></script>

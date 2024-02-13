@@ -4,7 +4,7 @@
 // https://firebase.google.com/docs/web/learn-more#libraries-cdn
 */
 
-// Import the functions you need from the SDKs you need
+// Import the functions we need from the SDKs we need
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
 import { getDatabase } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js";
 
@@ -25,5 +25,7 @@ const app = initializeApp(firebaseConfig);
 // Initialize Realtime Database and get a reference to the service
 const database = getDatabase(app);
 
+// TESTING: print db info to make sure its hooked up
+// console.log(database);
 
-console.log(database);
+// setup variables

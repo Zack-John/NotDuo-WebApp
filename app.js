@@ -36,13 +36,26 @@ var findEmail = document.querySelector("#findEmail");
 var insertButton = document.querySelector("#insertButton");
 var findButton = document.querySelector("#findButton");
 
+// add button event listeners
+insertButton.addEventListener('click', InsertData);
+findButton.addEventListener('click', FindData);
+
+
+/*----- FUNCTION STUFF -----*/
+
+
 function InsertData() {
-  set(ref(database, "Users/" + enterUsername.value), {
+
+  // hash password first
+  hash(enterPassword.value)
+
+  // then insert all data to db
+  .then((hex) => set(ref(database, "Users/" + enterUsername.value), {
+    username: enterUsername.value,
     firstName: enterFirstname.value,
     lastName: enterLastname.value,
-    passwordHash: enterPassword.value,
-    username: enterUsername.value
-  })
+    passwordHash: hex
+  }))
   .then(()=>{
     alert("Data inserted into the database!")
   })
@@ -52,8 +65,10 @@ function InsertData() {
 }
 
 function FindData() {
+  // store ref to db
   var dbref = ref(database);
 
+  // get snapshot of the bucket we're after
   get(child(dbref, "Users/" + findUsername.value))
   .then((snapshot)=>{
     if (snapshot.exists()) {
@@ -67,8 +82,13 @@ function FindData() {
   })
 }
 
-// TODO: hash passwords
+async function hash(string) {
+  const utf8 = new TextEncoder().encode(string);
+  const hashBuffer = await crypto.subtle.digest('SHA-256', utf8);
+  const hashArray = Array.from(new Uint8Array(hashBuffer));
+  const hashHex = hashArray
+  .map((bytes) => bytes.toString(16).padStart(2, '0'))
+  .join('');
 
-// add button event listeners
-insertButton.addEventListener('click', InsertData);
-findButton.addEventListener('click', FindData);
+  return hashHex;
+}

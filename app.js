@@ -8,7 +8,7 @@
 // Import the functions we need from the SDKs
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
 import { getDatabase, set, get, update, remove, ref, child} from "https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js";
-import { getMessaging, getToken, onMessage } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-messaging.js"
+import { getMessaging, getToken, isSupported, onMessage } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-messaging.js"
 
 
 // Your web app's Firebase configuration
@@ -22,10 +22,11 @@ const firebaseConfig = {
   appId: "1:644883802257:web:93ec198aa9ed7141597730"
 };
 
-// Initialize & Get Ref to Firebase App, Database
+// Initialize & Get Ref to SDKs
 const app = initializeApp(firebaseConfig);
 const database = getDatabase(app);
-const messaging = getMessaging(app);
+const messaging = async () => await isSupported() && getMessaging(app);
+// ^ call by await messaging() every time a Messaging instance is needed
 
 const VAPID_KEY = "BOH7kSCrXtzjNhv1kcNigNTWTd9ulRz_T2QLzAHlHRVZiNOWfYRilGkMVM-dt0Waq9XbW-ENwm4Iqb_dTQjW6sc";
 
@@ -33,7 +34,6 @@ var enterUsername = document.querySelector("#enterUsername");
 var enterFirstname = document.querySelector("#enterFirstname");
 var enterLastname = document.querySelector("#enterLastname");
 var enterPassword = document.querySelector("#enterPassword");
-
 var insertButton = document.querySelector("#insertButton");
 var findButton = document.querySelector("#findButton");
 
@@ -42,24 +42,9 @@ insertButton.addEventListener('click', InsertData); // create account
 findButton.addEventListener('click', FindData);     // sign in
 
 
-// Create Account:
-// user enters details and creates account
-// device token is saved
-// insert all data, including device token, in db
-
-// Sign In:
-// user enters details and clicks 'sign in' button
-// app queries db for account folder
-// if it DOES exist, send notification to stored device
-// if it DOES NOT exist, alert 'no account found'
-
-
 /*----- FUNCTIONS -----*/
-
-//--- Create Account
+// Create Account
 function InsertData() {
-
-  // saveMessagingDeviceToken();
 
   // hash password
   hash(enterPassword.value)
@@ -69,7 +54,9 @@ function InsertData() {
     lastName: enterLastname.value,
     passwordHash: hex
   }))
+
   .then(()=>{
+    saveMessagingDeviceToken(enterUsername.value);
     alert("Account Succesfully Created! (Data inserted)")
   })
   .catch((error)=>{
@@ -78,7 +65,7 @@ function InsertData() {
 }
 
 
-//--- Sign In
+// Sign In
 function FindData() {
   // store ref to db
   var dbref = ref(database);
@@ -97,13 +84,10 @@ function FindData() {
         console.log("stored hash: " + snapshot.val().passwordHash);
 
         if (hex == snapshot.val().passwordHash) {
-          // TODO: actual login process goes here; redirect to site, etc
           alert("Welcome back, " + snapshot.val().firstName + "!");
-          console.clear();
         }
         else {
           alert ("Incorrect password!");
-          console.clear();
         }
       })
     }
@@ -126,13 +110,34 @@ async function hash(string) {
   return hashHex;
 }
 
-// get FCM device token from device, store in db
-async function saveMessagingDeviceToken() {
+async function requestNotificationsPermissions(username) {
+  console.log("Requesting notifications permissions...")
+  const permission = await Notifcation.requestPermission();
+  if (permission === 'granted') {
+    await saveMessagingDeviceToken(username);
+  }
+  else {
+    console.log("Unable to get permission to notify");
+  }
+}
 
-  const fcmToken = await getToken(messaging, { vapidKey: VAPID_KEY});
+// get FCM device token from device, store in db
+async function saveMessagingDeviceToken(username) {
+
+  // store the return value of calling the messaging function at the top (await)
+  const msg = await messaging();
+
+  const fcmToken = await getToken(msg, { vapidKey: VAPID_KEY});
 
   if (fcmToken) {
     console.log("got FCM device token: ", fcmToken);
-    // save device token to db
+    await update(ref(database, "Users/" + username), {
+      deviceToken: fcmToken
+    })
+  }
+  
+  else {
+    // need to get permission to show notifications
+    requestNotificationsPermissions(username);
   }
 }

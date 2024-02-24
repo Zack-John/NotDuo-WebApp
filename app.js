@@ -4,9 +4,12 @@
 // https://firebase.google.com/docs/web/learn-more#libraries-cdn
 */
 
+
 // Import the functions we need from the SDKs
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
 import { getDatabase, set, get, update, remove, ref, child} from "https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js";
+import { getMessaging, getToken, onMessage } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-messaging.js"
+
 
 // Your web app's Firebase configuration
 const firebaseConfig = {
@@ -22,34 +25,44 @@ const firebaseConfig = {
 // Initialize & Get Ref to Firebase App, Database
 const app = initializeApp(firebaseConfig);
 const database = getDatabase(app);
+const messaging = getMessaging(app);
+
+const VAPID_KEY = "BOH7kSCrXtzjNhv1kcNigNTWTd9ulRz_T2QLzAHlHRVZiNOWfYRilGkMVM-dt0Waq9XbW-ENwm4Iqb_dTQjW6sc";
 
 var enterUsername = document.querySelector("#enterUsername");
 var enterFirstname = document.querySelector("#enterFirstname");
 var enterLastname = document.querySelector("#enterLastname");
 var enterPassword = document.querySelector("#enterPassword");
 
-var findUsername = document.querySelector("#findUsername");
-var findFirstname = document.querySelector("#findFirstname");
-var findLastname = document.querySelector("#findLastname");
-var findEmail = document.querySelector("#findEmail");
-
 var insertButton = document.querySelector("#insertButton");
 var findButton = document.querySelector("#findButton");
 
 // add button event listeners
-insertButton.addEventListener('click', InsertData);
-findButton.addEventListener('click', FindData);
+insertButton.addEventListener('click', InsertData); // create account
+findButton.addEventListener('click', FindData);     // sign in
 
 
-/*----- FUNCTION STUFF -----*/
+// Create Account:
+// user enters details and creates account
+// device token is saved
+// insert all data, including device token, in db
+
+// Sign In:
+// user enters details and clicks 'sign in' button
+// app queries db for account folder
+// if it DOES exist, send notification to stored device
+// if it DOES NOT exist, alert 'no account found'
 
 
+/*----- FUNCTIONS -----*/
+
+//--- Create Account
 function InsertData() {
 
-  // hash password first
-  hash(enterPassword.value)
+  // saveMessagingDeviceToken();
 
-  // then insert all data to db
+  // hash password
+  hash(enterPassword.value)
   .then((hex) => set(ref(database, "Users/" + enterUsername.value), {
     username: enterUsername.value,
     firstName: enterFirstname.value,
@@ -57,30 +70,50 @@ function InsertData() {
     passwordHash: hex
   }))
   .then(()=>{
-    alert("Data inserted into the database!")
+    alert("Account Succesfully Created! (Data inserted)")
   })
   .catch((error)=>{
     alert(error)
   });
 }
 
+
+//--- Sign In
 function FindData() {
   // store ref to db
   var dbref = ref(database);
 
   // get snapshot of the bucket we're after
-  get(child(dbref, "Users/" + findUsername.value))
+  get(child(dbref, "Users/" + enterUsername.value))
   .then((snapshot)=>{
     if (snapshot.exists()) {
-      findFirstname.innerHTML = snapshot.val().firstName;
-      findLastname.innerHTML = snapshot.val().lastName;
+
+      // hash input password
+      hash(enterPassword.value)
+
+      // check if the hashes match
+      .then((hex) => {
+        console.log("input hash: " + hex);
+        console.log("stored hash: " + snapshot.val().passwordHash);
+
+        if (hex == snapshot.val().passwordHash) {
+          // TODO: actual login process goes here; redirect to site, etc
+          alert("Welcome back, " + snapshot.val().firstName + "!");
+          console.clear();
+        }
+        else {
+          alert ("Incorrect password!");
+          console.clear();
+        }
+      })
     }
-    else { alert("No data found :("); }
+    else { alert("No account found :("); }
   })
   .catch((error)=>{
     alert(error);
   })
 }
+
 
 async function hash(string) {
   const utf8 = new TextEncoder().encode(string);
@@ -91,4 +124,15 @@ async function hash(string) {
   .join('');
 
   return hashHex;
+}
+
+// get FCM device token from device, store in db
+async function saveMessagingDeviceToken() {
+
+  const fcmToken = await getToken(messaging, { vapidKey: VAPID_KEY});
+
+  if (fcmToken) {
+    console.log("got FCM device token: ", fcmToken);
+    // save device token to db
+  }
 }

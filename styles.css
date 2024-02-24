@@ -40,15 +40,9 @@ body {
   gap: 64px;
 }
 
-#InsertSection {
+/* #InsertSection {
   display: flex;
   flex-direction: column;
-}
-
-#findDetails {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-}
+} */
 
 
